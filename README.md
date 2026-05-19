@@ -81,7 +81,9 @@ PLAYWRIGHT_SERVICE_WORKERS=block       recommended for deterministic monitoring
 WEBDRIVER_DELAY_BEFORE_CONTENT_READY=5 changedetection-compatible wait
 ```
 
-Proxy support reuses changedetection.io's `proxy_override` and `playwright_proxy_*` environment variables. For Camoufox IP/timezone/locale consistency, enable `CAMOUFOX_GEOIP=true` when using a residential proxy and the `camoufox[geoip]` extra.
+Proxy support reuses changedetection.io's `proxy_override` and `playwright_proxy_*` environment variables. Because changedetection.io 0.55.x skips passing per-watch proxies to `extra_browser_*` fetchers, the native fetcher also recovers the selected watch proxy from `/datastore/<watch_uuid>/watch.json` + `/datastore/proxies.json`.
+
+For Camoufox IP/timezone/locale consistency, enable `CAMOUFOX_GEOIP=true` when using a residential proxy and the `camoufox[geoip]` extra.
 
 ## Current status
 

@@ -4,11 +4,12 @@ import asyncio
 import gc
 import json
 import os
+from pathlib import Path
 
 from loguru import logger
 from changedetectionio.pluggy_interface import hookimpl
 
-from .common import camoufox_launch_kwargs, merge_proxy
+from .common import camoufox_launch_kwargs, merge_proxy, proxy_url_to_dict
 
 
 @hookimpl
@@ -58,16 +59,47 @@ def register_content_fetcher():
                 "title": "Camoufox — stealth Firefox",
             }
 
-        async def _launch_browser(self):
+        async def _launch_browser(self, watch_uuid=None):
             from camoufox.async_api import AsyncNewBrowser
             from playwright.async_api import async_playwright
 
+            proxy = self.proxy or self._proxy_from_datastore(watch_uuid)
             self._playwright = await async_playwright().start()
             self._browser = await AsyncNewBrowser(
                 self._playwright,
-                **camoufox_launch_kwargs(proxy=self.proxy),
+                **camoufox_launch_kwargs(proxy=proxy),
             )
             return self._browser
+
+        @staticmethod
+        def _proxy_from_datastore(watch_uuid):
+            """Recover changedetection per-watch proxy settings for extra_browser_* plugins.
+
+            changedetection.io 0.55.x intentionally skips passing proxy_override to
+            fetchers whose names start with extra_browser_, assuming they are remote
+            browser endpoints. This plugin uses the prefix for API-schema
+            compatibility, so we read the same datastore files changedetection uses
+            and apply the selected proxy ourselves.
+            """
+            if not watch_uuid:
+                return None
+            datastore = Path(os.getenv("CHANGEDETECTION_DATASTORE", "/datastore"))
+            try:
+                watch = json.loads((datastore / str(watch_uuid) / "watch.json").read_text())
+                proxy_id = watch.get("proxy")
+                if not proxy_id:
+                    return None
+                proxies = json.loads((datastore / "proxies.json").read_text())
+                proxy = proxies.get(proxy_id) or {}
+                proxy_url = proxy.get("url")
+                if proxy_url:
+                    logger.debug(f"Camoufox > using datastore proxy '{proxy_id}' for {watch_uuid}")
+                    return proxy_url_to_dict(proxy_url)
+            except FileNotFoundError:
+                return None
+            except Exception as e:
+                logger.warning(f"Camoufox > could not load datastore proxy for {watch_uuid}: {e}")
+            return None
 
         async def screenshot_step(self, step_n=""):
             super().screenshot_step(step_n=step_n)
@@ -122,7 +154,7 @@ def register_content_fetcher():
             response = None
 
             try:
-                browser = await self._launch_browser()
+                browser = await self._launch_browser(watch_uuid=watch_uuid)
                 self._context = await browser.new_context(
                     accept_downloads=False,
                     bypass_csp=True,
