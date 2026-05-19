@@ -1,0 +1,14 @@
+services:
+  changedetection:
+    build:
+      context: ..
+      dockerfile: examples/Dockerfile
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./datastore:/datastore
+    environment:
+      - CAMOUFOX_HEADLESS=true
+      - CAMOUFOX_HUMANIZE=false
+      - CAMOUFOX_GEOIP=false
+      - PLAYWRIGHT_SERVICE_WORKERS=block

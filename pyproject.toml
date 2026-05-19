@@ -1,0 +1,52 @@
+[build-system]
+requires = ["hatchling>=1.21"]
+build-backend = "hatchling.build"
+
+[project]
+name = "changedetection.io-camoufox"
+version = "0.1.0"
+description = "Camoufox and camofox-browser fetcher plugin for changedetection.io"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [{ name = "Alex Ferrari" }]
+keywords = ["changedetection.io", "camoufox", "camofox-browser", "anti-detect", "playwright", "monitoring"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: System Administrators",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Internet :: WWW/HTTP :: Site Management",
+]
+# changedetection.io is intentionally not a Python dependency here.
+# The plugin is installed *inside* an existing changedetection.io runtime via
+# EXTRA_PACKAGES or a custom image; depending on changedetection.io here can make
+# pip/uv try to resolve and reinstall the host application.
+dependencies = [
+  "camoufox>=0.4.11",
+  "playwright>=1.40.0",
+  "httpx>=0.27",
+]
+
+[project.optional-dependencies]
+rest = ["httpx>=0.27"]
+dev = ["pytest>=8", "ruff>=0.6"]
+geoip = ["camoufox[geoip]>=0.4.11"]
+
+[project.entry-points.changedetectionio]
+camoufox_native = "changedetection_camofox.native_fetcher"
+camofox_rest = "changedetection_camofox.rest_fetcher"
+
+[project.urls]
+Homepage = "https://github.com/your-org/changedetection.io-camoufox"
+Issues = "https://github.com/your-org/changedetection.io-camoufox/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["changedetection_camofox"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
